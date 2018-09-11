@@ -37,15 +37,20 @@ router.get('/:id', (req, res, next) => {
   const id = req.params.id;
 
   knex
-    .select('notes.id', 'title', 'content')
+    .first('notes.id', 'title', 'content')
     .from('notes')
     .modify(queryBuilder => {
       if (id) {
         queryBuilder.where('id', id);
       }
     })
-    .then(results => {
-      res.json(results);
+    .then(item => {
+      if (item) {
+        res.json(item);
+      } else {
+        next();
+      }
+      
     })
     .catch(err => {
       next(err);
@@ -101,11 +106,16 @@ router.post('/', (req, res, next) => {
     return next(err);
   }
 
-  notes.create(newItem)
-    .then(item => {
-      if (item) {
-        res.location(`http://${req.headers.host}/notes/${item.id}`).status(201).json(item);
+  knex
+    .into('notes')
+    .modify( queryBuilder => {
+      if (newItem) {
+        queryBuilder.insert(newItem);
       }
+    })
+    .returning(['id', 'title', 'content'])
+    .then(item => {
+      res.location(`http://${req.headers.host}/notes/${item.id}`).status(201).json(item)
     })
     .catch(err => {
       next(err);
@@ -116,8 +126,15 @@ router.post('/', (req, res, next) => {
 router.delete('/:id', (req, res, next) => {
   const id = req.params.id;
 
-  notes.delete(id)
-    .then(() => {
+  knex
+    .from('notes')
+    .modify( queryBuilder => {
+      if (id) {
+        queryBuilder.del();
+        queryBuilder.where({'id':id})
+      }
+    })
+    .then( () => {
       res.sendStatus(204);
     })
     .catch(err => {

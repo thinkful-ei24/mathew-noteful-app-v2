@@ -113,6 +113,7 @@ const noteful = (function () {
    */
   function handleNoteItemClick() {
     $('.js-notes-list').on('click', '.js-note-link', event => {
+      console.log('test')
       event.preventDefault();
 
       const noteId = getNoteIdFromElement(event.currentTarget);
