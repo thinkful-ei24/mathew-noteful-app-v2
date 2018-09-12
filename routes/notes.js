@@ -115,7 +115,7 @@ router.post('/', (req, res, next) => {
     })
     .returning(['id', 'title', 'content'])
     .then(item => {
-      res.location(`http://${req.headers.host}/notes/${item.id}`).status(201).json(item)
+      res.location(`http://${req.headers.host}/notes/${item.id}`).status(201).json(item);
     })
     .catch(err => {
       next(err);
@@ -131,7 +131,7 @@ router.delete('/:id', (req, res, next) => {
     .modify( queryBuilder => {
       if (id) {
         queryBuilder.del();
-        queryBuilder.where({'id':id})
+        queryBuilder.where({'id':id});
       }
     })
     .then( () => {
