@@ -1,7 +1,9 @@
 -- psql -U dev -d noteful -f ./db/noteful.sql
 
+DROP TABLE IF EXISTS notes_tags;
 DROP TABLE IF EXISTS notes;
 DROP TABLE IF EXISTS folders;
+DROP TABLE IF EXISTS tags;
 
 CREATE TABLE folders (
     id serial PRIMARY KEY,
@@ -22,6 +24,16 @@ ALTER SEQUENCE notes_id_seq RESTART WITH 1000;
 -- If you delete a folder then set folder_id to null on related notes
 -- IOW, delete a folder and move the notes to "uncategorized"
 ALTER TABLE notes ADD COLUMN folder_id int REFERENCES folders(id) ON DELETE SET NULL;
+
+CREATE TABLE tags (
+  id serial PRIMARY KEY,
+  name text NOT NULL UNIQUE
+);
+
+CREATE TABLE notes_tags( 
+  note_id INTEGER NOT NULL REFERENCES notes ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags ON DELETE CASCADE
+);
 
 -- Prevent folders from being deleted if are referenced by any note
 -- IOW, only empty folder can be deleted
@@ -89,8 +101,28 @@ INSERT INTO notes (title, content, folder_id) VALUES
   , NULL
   );
 
+INSERT INTO tags (name) VALUES
+  ('tag1'),
+  ('tag2'),
+  ('tag3');
+
+  INSERT INTO notes_tags (note_id, tag_id) VALUES
+    (1001, 1),
+    (1002, 1),
+    (1001, 3),
+    (1003, 2),
+    (1002, 3),
+    (1001, 2),
+    (1004, 2);
+
+SELECT title, notes.id, tags.name as "Tag Name", folders.name as "Folder Name" 
+FROM notes
+LEFT JOIN folders ON notes.folder_id = folders.id
+LEFT JOIN notes_tags ON notes.id = notes_tags.note_id
+LEFT JOIN tags ON notes_tags.tag_id = tags.id;
+
 -- -- get all notes
--- SELECT * FROM notes;
+SELECT * FROM notes_tags;
 
 -- -- get all folders
 -- SELECT * FROM folders;
