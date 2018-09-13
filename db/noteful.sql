@@ -128,8 +128,9 @@ SELECT * FROM notes_tags;
 -- SELECT * FROM folders;
 
 -- -- get all notes with folders
--- SELECT * FROM notes
--- INNER JOIN folders ON notes.folder_id = folders.id;
+SELECT * FROM notes
+INNER JOIN folders ON notes.folder_id = folders.id;
+
 
 -- -- get all notes, show folders if they exists otherwise null
 -- SELECT folder_id as folderId FROM notes
