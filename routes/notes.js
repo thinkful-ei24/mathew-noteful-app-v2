@@ -72,7 +72,8 @@ router.put('/:id', (req, res, next) => {
 
   /***** Never trust users - validate input *****/
   const updateObj = {};
-  const updateableFields = ['title', 'content'];
+  const updateableFields = ['title', 'content', 'folderId'];
+  let noteId;
 
   updateableFields.forEach(field => {
     if (field in req.body) {
@@ -94,7 +95,14 @@ router.put('/:id', (req, res, next) => {
         queryBuilder.update(updateObj);
       }
     })
-    .returning(['id', 'title', 'content'])
+    .returning('id')
+    .then( ([id]) => {
+      noteId = id;
+      return knex.select('notes.id', 'title', 'content', 'folder_id as folderId', 'folders.name as folderName')
+        .from('notes')
+        .leftJoin('folders', 'notes.folder_id', 'folders.id')
+        .where('notes.id', noteId)
+    })
     .then(results => {
       res.json(results);
     })
