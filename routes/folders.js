@@ -1,74 +1,14 @@
 'use strict';
 
 const express = require('express');
-
-// Create an router instance (aka "mini-app")
 const router = express.Router();
+
 const knex = require('../knex');
 
+/* ========== GET/READ ALL TAGS ========== */
 router.get('/', (req, res, next) => {
   knex.select('id', 'name')
     .from('folders')
-    .then( results => {
-      res.json(results);
-    })
-    .catch(err => next(err));
-});
-
-router.get('/:id', (req, res, next) => {
-  const id = req.params.id;
-
-  knex
-    .first('id', 'name')
-    .from('folders')
-    .modify(queryBuilder => {
-      if (id) {
-        queryBuilder.where('id', id);
-      }
-    })
-    .then(item => {
-      if (item) {
-        res.json(item);
-      } else {
-        next();
-      }
-      
-    })
-    .catch(err => {
-      next(err);
-    });
-
-});
-
-router.put('/:id', (req, res, next) => {
-  const id = req.params.id;
-
-  const updateObj = {};
-  const updateableFields = ['name'];
-
-  updateableFields.forEach(field => {
-    if (field in req.body) {
-      updateObj[field] = req.body[field];
-    }
-  });
-  console.log(updateObj)
-
-  /***** Never trust users - validate input *****/
-  if (!updateObj.name) {
-    const err = new Error('Missing `name` in request body');
-    err.status = 400;
-    return next(err);
-  }
-
-  knex
-    .from('folders')
-    .modify( queryBuilder => {
-      if (id && updateObj) {
-        queryBuilder.where('id', id);
-        queryBuilder.update(updateObj);
-      }
-    })
-    .returning(['id', 'name'])
     .then(results => {
       res.json(results);
     })
@@ -77,57 +17,88 @@ router.put('/:id', (req, res, next) => {
     });
 });
 
+/* ========== GET/READ SINGLE TAGS ========== */
+router.get('/:id', (req, res, next) => {
+  knex.first('id', 'name')
+    .where('id', req.params.id)
+    .from('folders')
+    .then(result => {
+      if (result) {
+        res.json(result);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      next(err);
+    });
+});
+
+/* ========== POST/CREATE ITEM ========== */
 router.post('/', (req, res, next) => {
-  const id = req.params.id;
-  const name = req.body['name'];
+  const { name } = req.body;
 
-  const newItem = { name };
-
-  console.log(newItem)
-  /***** Never trust users - validate input *****/
-  if (!newItem.name) {
+  /***** Never trust users. Validate input *****/
+  if (!name) {
     const err = new Error('Missing `name` in request body');
     err.status = 400;
     return next(err);
   }
 
-  knex
+  const newItem = { name };
+
+  knex.insert(newItem)
     .into('folders')
-    .modify( queryBuilder => {
-      if (newItem) {
-        queryBuilder.insert(newItem);
-      }
-    })
-    //.returning(['id', 'name'])
-    .then(item => {
-      res.location(`http://${req.headers.host}/folders/${item.id}`).status(201).json(item);
+    .returning(['id', 'name'])
+    .then((results) => {
+      const result = results[0];
+      res.location(`${req.originalUrl}/${result.id}`).status(201).json(result);
     })
     .catch(err => {
       next(err);
     });
 });
 
-// Delete an item
+/* ========== PUT/UPDATE A SINGLE ITEM ========== */
+router.put('/:id', (req, res, next) => {
+  const { name } = req.body;
+
+  /***** Never trust users. Validate input *****/
+  if (!name) {
+    const err = new Error('Missing `name` in request body');
+    err.status = 400;
+    return next(err);
+  }
+
+  const updateItem = { name };
+
+  knex('folders')
+    .update(updateItem)
+    .where('id', req.params.id)
+    .returning(['id', 'name'])
+    .then(([result]) => {
+      if (result) {
+        res.json(result);
+      } else {
+        next();
+      }
+    })
+    .catch(err => {
+      next(err);
+    });
+});
+
+/* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
-  const id = req.params.id;
-  console.log(id)
-
-  knex
+  knex.del()
+    .where('id', req.params.id)
     .from('folders')
-    .modify( queryBuilder => {
-      if (id) {
-        console.log(id)
-        queryBuilder.where({'id':id});
-        queryBuilder.del();
-      }
-    })
-    .then( () => {
-      res.sendStatus(204);
+    .then(() => {
+      res.status(204).end();
     })
     .catch(err => {
       next(err);
     });
 });
-
 
 module.exports = router;
