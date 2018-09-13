@@ -10,15 +10,15 @@ function hydrateNotes(input) {
       hydrated.push(lookup[note.id]);
     }
 
-    if (note.TagId && note.TagName) {
+    if (note.tagId && note.tagName) {
       console.log('test2')
       lookup[note.id].tags.push({
-        id: note.TagId,
-        name: note.TagName
+        id: note.tagId,
+        name: note.tagName
       });
     }
-    delete lookup[note.id].TagId;
-    delete lookup[note.id].TagName;
+    delete lookup[note.id].tagId;
+    delete lookup[note.id].tagName;
   }
   return hydrated;
 }

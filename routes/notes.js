@@ -10,6 +10,7 @@ const router = express.Router();
 router.get('/', (req, res, next) => {
   const searchTerm = req.query.searchTerm;
   const folderId = req.query.folderId;
+  const tagId = req.query.tagId;
 
   knex
     .select(
@@ -18,8 +19,8 @@ router.get('/', (req, res, next) => {
       'content', 
       'folder_id', 
       'folders.name as folderName',
-      'tags.id as TagId',
-      'tags.name as TagName'
+      'tags.id as tagId',
+      'tags.name as tagName'
     )
     .from('notes')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
@@ -33,6 +34,11 @@ router.get('/', (req, res, next) => {
     .modify(function (queryBuilder) {
       if (folderId) {
         queryBuilder.where('folder_id', folderId);
+      }
+    })
+    .modify(function (queryBuilder) {
+      if (tagId) {
+        queryBuilder.where('tag_id', tagId);
       }
     })
     .orderBy('notes.id')
@@ -53,13 +59,24 @@ router.get('/', (req, res, next) => {
 router.get('/:id', (req, res, next) => {
   const noteId = req.params.id;
 
-  knex.first('notes.id', 'title', 'content', 'folder_id', 'folders.name as folderName')
+  knex
+    .select(
+      'notes.id', 
+      'title', 
+      'content', 
+      'folder_id', 
+      'folders.name as folderName',
+      'tags.id as tagId',
+      'tags.name as tagName')
     .from('notes')
     .leftJoin('folders', 'notes.folder_id', 'folders.id')
+    .leftJoin('notes_tags', 'notes_tags.note_id', 'notes.id')
+    .leftJoin('tags', 'tags.id', 'notes_tags.tag_id')
     .where('notes.id', noteId)
     .then(result => {
       if (result) {
-        res.json(result);
+        const hydrated = hydrateNotes(result);
+        res.json(hydrated);
       } else {
         next();
       }
