@@ -1,32 +1,27 @@
 'use strict';
 
 const express = require('express');
-const knex = require('../knex');
-
 const router = express.Router();
+
+const knex = require('../knex');
 
 /* ========== GET/READ ALL TAGS ========== */
 router.get('/', (req, res, next) => {
-  knex
+  knex.select('id', 'name')
     .from('tags')
-    .select('id', 'name')
-    .then( results => {
+    .then(results => {
       res.json(results);
     })
     .catch(err => {
       next(err);
     });
-    
 });
 
 /* ========== GET/READ SINGLE TAGS ========== */
 router.get('/:id', (req, res, next) => {
-  const objectId = req.params.id;
-
-  knex
+  knex.first('id', 'name')
+    .where('id', req.params.id)
     .from('tags')
-    .first('id', 'name')
-    .where('id', objectId)
     .then(result => {
       if (result) {
         res.json(result);
@@ -37,7 +32,6 @@ router.get('/:id', (req, res, next) => {
     .catch(err => {
       next(err);
     });
-  
 });
 
 /* ========== POST/CREATE ITEM ========== */
@@ -67,7 +61,6 @@ router.post('/', (req, res, next) => {
 
 /* ========== PUT/UPDATE A SINGLE ITEM ========== */
 router.put('/:id', (req, res, next) => {
-  const objectId = req.params.id;
   const { name } = req.body;
 
   /***** Never trust users. Validate input *****/
@@ -79,8 +72,7 @@ router.put('/:id', (req, res, next) => {
 
   const updateItem = { name };
 
-  knex
-    .into('tags')
+  knex('tags')
     .update(updateItem)
     .where('id', req.params.id)
     .returning(['id', 'name'])
@@ -88,23 +80,22 @@ router.put('/:id', (req, res, next) => {
       if (result) {
         res.json(result);
       } else {
-        next();
+        next(); // fall-through to 404 handler
       }
     })
     .catch(err => {
       next(err);
     });
-
-})
+});
 
 /* ========== DELETE/REMOVE A SINGLE ITEM ========== */
 router.delete('/:id', (req, res, next) => {
-  knex
-    .del()
+  knex.del()
     .where('id', req.params.id)
     .from('tags')
     .then(() => {
       res.status(204).end();
+
     })
     .catch(err => {
       next(err);
